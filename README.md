@@ -36,7 +36,7 @@ A real-time visual language model application that runs FastVLM-0.5B-ONNX direct
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/o-messai/fastVLM.git
 cd fastVLM
 ```
 
