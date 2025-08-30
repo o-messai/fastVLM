@@ -44,7 +44,7 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
           onProgress?.("Processor loaded. Loading model...");
           modelRef.current = await AutoModelForImageTextToText.from_pretrained(MODEL_ID, {
             dtype: {
-              embed_tokens: "fp16",
+              embed_tokens: "fp32",
               vision_encoder: "q4",
               decoder_model_merged: "q4",
             },
