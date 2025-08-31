@@ -28,7 +28,7 @@ def load_model():
     tok = AutoTokenizer.from_pretrained(MID, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
         MID,
-        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
         device_map="auto",
         trust_remote_code=True,
     )
@@ -40,7 +40,7 @@ tok, model = load_model()
 def run_fastvlm_caption(image: Image.Image) -> str:
     # Build chat prompt
     messages = [
-        {"role": "user", "content": "<image>\nDescribe this image in detail."}
+        {"role": "user", "content": "<image>\n Give short description of what you see in the image."}
     ]
     rendered = tok.apply_chat_template(
         messages, add_generation_prompt=True, tokenize=False

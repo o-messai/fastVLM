@@ -17,7 +17,15 @@ interface WelcomeScreenProps {
 
 export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   return (
-    <Box width="100%" maxWidth={800}>
+    <Box  sx={{ 
+      width: "100%", 
+      height: "100%", 
+      display: "flex", 
+      alignItems: "center", 
+      justifyContent: "center", 
+      
+        px: 10 // padding so it’s not tight on small screens>
+    }}>
       <Card sx={{ maxWidth: 800, width: "100%" }}>
         <CardContent sx={{ p: 6, textAlign: "center" }}>
           <Stack spacing={4} alignItems="center">
@@ -34,7 +42,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
                   fontWeight: 700,
                 }}
               >
-                FastVLM Browser
+                FastVLM + FastAPI + React
               </Typography>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Real-time visual language model powered by FastVLM-0.5B-ONNX
@@ -66,7 +74,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
 
             <Box>
               <Typography variant="body1" color="text.secondary" paragraph>
-                Experience AI-powered image understanding directly in your browser. 
+                Experience AI-powered image understanding locally in your browser. 
                 This application uses the FastVLM model to provide real-time descriptions 
                 and analysis of your webcam feed.
               </Typography>
@@ -101,10 +109,10 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
 
             <Box sx={{ mt: 2 }}>
               <Typography variant="caption" color="text.secondary" display="block">
-                Powered by Hugging Face Transformers.js
+                Powered by FastAPI +Hugging Face Transformers
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block">
-                Model: FastVLM-0.5B-ONNX
+                Model: FastVLM-0.5B-ONNX by Apple
               </Typography>
             </Box>
           </Stack>

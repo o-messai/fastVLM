@@ -83,8 +83,7 @@ function AppContent() {
 
   return (
     <div className="App relative h-screen overflow-hidden">
-      <div className="absolute inset-0 bg-gray-900" />
-
+      {/* Webcam video as the background */}
       {webcamStream && (
         <video
           ref={videoRef}
@@ -95,21 +94,31 @@ function AppContent() {
           style={{
             filter: videoBlurState,
             opacity: isVideoReady ? 1 : 0,
+            zIndex: 0, // keep video at the very back
           }}
         />
       )}
-
-      {appState !== "captioning" && <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm" />}
-
-      {appState === "requesting-permission" && <WebcamPermissionDialog onPermissionGranted={handlePermissionGranted} />}
-
-      {appState === "welcome" && <WelcomeScreen onStart={handleStart} />}
-
-      {appState === "loading" && <LoadingScreen onComplete={handleLoadingComplete} />}
-
-      {appState === "captioning" && <CaptioningView videoRef={videoRef} />}
+  
+      {/* Dark overlay to control dimming, blur, etc. */}
+      {appState !== "captioning" && (
+        <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm z-10" />
+      )}
+  
+      {/* Screens on top of video */}
+      <div className="absolute inset-0 z-20 flex items-center justify-center">
+        {appState === "requesting-permission" && (
+          <WebcamPermissionDialog onPermissionGranted={handlePermissionGranted} />
+        )}
+  
+        {appState === "welcome" && <WelcomeScreen onStart={handleStart} />}
+  
+        {appState === "loading" && <LoadingScreen onComplete={handleLoadingComplete} />}
+  
+        {appState === "captioning" && <CaptioningView videoRef={videoRef} />}
+      </div>
     </div>
   );
+  
 }
 
 function App() {

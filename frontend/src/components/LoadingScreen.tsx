@@ -49,7 +49,14 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
   ];
 
   return (
-    <Box width="100%" maxWidth={800}>
+    <Box  sx={{ 
+      width: "100%", 
+      height: "100%", 
+      display: "flex", 
+      alignItems: "center", 
+      justifyContent: "center", 
+      px: 10 // padding so it’s not tight on small screens>
+    }}>
       <Card sx={{ maxWidth: 800, width: "100%" }}>
         <CardContent sx={{ p: 6, textAlign: "center" }}>
           <Stack spacing={4} alignItems="center">
