@@ -1,4 +1,4 @@
-# FastVLM
+# FastVLM + FastAPI + React js
 
 FastVLM is a **real-time visual language model demo** built with:
 - **FastAPI** as the backend (serving a Hugging Face Transformer model).
