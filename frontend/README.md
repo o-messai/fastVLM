@@ -46,8 +46,8 @@ This app connects to the **FastAPI backend**, which runs the **FastVLM-0.5B-ONNX
    ```bash
    git clone https://github.com/o-messai/fastVLM.git
    cd fastVLM/frontend
-```
-### Project Structure
+    ```
+### 📂 Project Structure
 ```
 frontend/
 ├── src/
