@@ -46,3 +46,23 @@ This app connects to the **FastAPI backend**, which runs the **FastVLM-0.5B-ONNX
    ```bash
    git clone https://github.com/o-messai/fastVLM.git
    cd fastVLM/frontend
+```
+### Project Structure
+```
+frontend/
+├── src/
+│   ├── components/          # React components
+│   │   ├── CaptioningView.tsx
+│   │   ├── LoadingScreen.tsx
+│   │   ├── WelcomeScreen.tsx
+│   │   └── WebcamPermissionDialog.tsx
+│   ├── context/             # React context
+│   │   ├── VLMContext.tsx
+│   │   └── useVLMContext.ts
+│   ├── types/               # Type definitions
+│   │   └── index.ts
+│   ├── constants/           # Application constants
+│   │   └── index.ts
+│   ├── App.jsx              # Main app component
+│   └── main.jsx             # Entry point
+```
