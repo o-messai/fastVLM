@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pillow
+pydantic
+onnxruntime
+transformers
+torch
+timm
+accelerate
+python-multipart

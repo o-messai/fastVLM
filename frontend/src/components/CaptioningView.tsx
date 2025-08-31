@@ -22,11 +22,33 @@ import {
   Error,
   CheckCircle,
 } from "@mui/icons-material";
-import { useVLMContext } from "../context/useVLMContext";
 import { PROMPTS, TIMING } from "../constants";
 
 interface CaptioningViewProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
+}
+
+async function sendFrameToBackend(imageBlob: Blob, prompt: string) {
+  const formData = new FormData();
+  formData.append("file", imageBlob, "frame.jpg");
+  // Optionally send prompt as a query param or in formData
+  const response = await fetch("http://localhost:8000/caption", {
+    method: "POST",
+    body: formData,
+  });
+  const data = await response.json();
+  return data.caption;
+}
+
+function captureFrame(video: HTMLVideoElement): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx!.drawImage(video, 0, 0);
+  return new Promise(resolve => {
+    canvas.toBlob(blob => resolve(blob!), "image/jpeg", 0.95);
+  });
 }
 
 function useCaptioningLoop(
@@ -36,7 +58,6 @@ function useCaptioningLoop(
   onCaptionUpdate: (caption: string) => void,
   onError: (error: string) => void,
 ) {
-  const { isLoaded, runInference } = useVLMContext();
   const abortControllerRef = useRef<AbortController | null>(null);
   const onCaptionUpdateRef = useRef(onCaptionUpdate);
   const onErrorRef = useRef(onError);
@@ -51,7 +72,7 @@ function useCaptioningLoop(
 
   useEffect(() => {
     abortControllerRef.current?.abort();
-    if (!isRunning || !isLoaded) return;
+    if (!isRunning) return;
 
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
@@ -61,7 +82,8 @@ function useCaptioningLoop(
         if (video && video.readyState >= 2 && !video.paused && video.videoWidth > 0) {
           try {
             const currentPrompt = promptRef.current || "";
-            const result = await runInference(video, currentPrompt, onCaptionUpdateRef.current);
+            const blob = await captureFrame(video);
+            const result = await sendFrameToBackend(blob, currentPrompt);
             if (result && !signal.aborted) onCaptionUpdateRef.current(result);
           } catch (error: any) {
             if (!signal.aborted) {
@@ -81,7 +103,7 @@ function useCaptioningLoop(
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [isRunning, isLoaded, runInference, promptRef, videoRef]);
+  }, [isRunning, promptRef, videoRef]);
 }
 
 export default function CaptioningView({ videoRef }: CaptioningViewProps) {
