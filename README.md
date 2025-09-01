@@ -1,6 +1,9 @@
 # FastVLM + FastAPI + React js
 
-![Demo Animation](./demo.gif)
+<video width="100%" controls>
+  <source src="./demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 FastVLM is a **real-time visual language model demo** built with:
 - **FastAPI** as the backend (serving a Hugging Face Transformer model).
