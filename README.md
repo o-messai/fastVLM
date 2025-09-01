@@ -95,7 +95,7 @@ Interact with the welcome screen, then view real-time AI captions of your webcam
 ### 📂 Project Structure
 ```
 fastVLM/
-├── app/                 # FastAPI backend
+├── backend/                 # FastAPI backend
 │   ├── main.py          # Entry point for Uvicorn
 │   └── ...              # API endpoints, model loading
 ├── frontend/            # React.js frontend
