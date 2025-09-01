@@ -55,31 +55,48 @@ export default function WebcamPermissionDialog({ onPermissionGranted }: WebcamPe
 
   return (
     <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="100vh"
-      p={3}
+      sx={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        pointerEvents: "auto"
+      }}
     >
-      <Card sx={{ maxWidth: 500, width: "100%" }}>
-        <CardContent sx={{ p: 4, textAlign: "center" }}>
+      <Card 
+        className="vintage-card vintage-border"
+        sx={{ 
+          maxWidth: 500, 
+          width: "90%",
+          maxHeight: "80vh",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+        }}
+      >
+        <CardContent sx={{ p: 4, textAlign: "center", position: "relative", zIndex: 1 }}>
           <Stack spacing={3} alignItems="center">
-            <Avatar
-              sx={{
-                width: 80,
-                height: 80,
-                bgcolor: "primary.main",
-                mb: 2,
-              }}
+   
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              gutterBottom
+              className="retro-glow vintage-text"
             >
-              <CameraAlt sx={{ fontSize: 40 }} />
-            </Avatar>
-
-            <Typography variant="h4" component="h1" gutterBottom>
               Camera Access Required
             </Typography>
 
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography 
+              variant="body1" 
+              color="text.secondary" 
+              sx={{ mb: 2 }}
+              className="vintage-text"
+            >
               FastVLM needs access to your camera to analyze images in real-time.
             </Typography>
 
@@ -88,24 +105,57 @@ export default function WebcamPermissionDialog({ onPermissionGranted }: WebcamPe
               size="large"
               onClick={requestPermission}
               disabled={isRequesting}
-              startIcon={isRequesting ? <CircularProgress size={20} /> : <Security />}
-              sx={{ minWidth: 200 }}
+              startIcon={isRequesting ? <CircularProgress size={20} /> : <Security className="vintage-icon" />}
+              className="vintage-button"
+              sx={{ 
+                minWidth: 200,
+                background: "linear-gradient(45deg, #00d4aa 0%, #4dd8c7 100%)",
+                color: "#000",
+                fontWeight: 600,
+                "&:hover": {
+                  background: "linear-gradient(45deg, #4dd8c7 0%, #00d4aa 100%)",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 20px rgba(0, 212, 170, 0.4)",
+                },
+                "&:disabled": {
+                  background: "rgba(0, 212, 170, 0.3)",
+                  color: "rgba(0, 0, 0, 0.5)",
+                }
+              }}
             >
               {isRequesting ? "Requesting..." : "Allow Camera Access"}
             </Button>
 
             {error && (
-              <Alert severity="error" sx={{ width: "100%" }}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  width: "100%",
+                  border: "1px solid rgba(244, 67, 54, 0.3)",
+                  backgroundColor: "rgba(244, 67, 54, 0.05)",
+                }}
+                className="vintage-alert error"
+              >
                 {error}
               </Alert>
             )}
 
             <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Your camera feed will only be processed locally in your browser.
+              <Typography 
+                variant="caption" 
+                color="text.secondary" 
+                display="block"
+                className="vintage-text"
+              >
+                Your camera feed will be processed by our FastAPI backend.
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block">
-                No images or video are sent to external servers.
+              <Typography 
+                variant="caption" 
+                color="text.secondary" 
+                display="block"
+                className="vintage-text"
+              >
+                Images are sent securely to the backend for AI analysis.
               </Typography>
             </Box>
           </Stack>

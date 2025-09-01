@@ -69,21 +69,21 @@ function AppContent() {
   const videoBlurState = useMemo(() => {
     switch (appState) {
       case "requesting-permission":
-        return "blur(20px) brightness(0.2) saturate(0.5)";
+        return "blur(25px) brightness(0.3) saturate(0.8)";
       case "welcome":
-        return "blur(12px) brightness(0.3) saturate(0.7)";
+        return "blur(20px) brightness(0.4) saturate(0.9)";
       case "loading":
-        return "blur(8px) brightness(0.4) saturate(0.8)";
+        return "blur(15px) brightness(0.5) saturate(0.95)";
       case "captioning":
         return "none";
       default:
-        return "blur(20px) brightness(0.2) saturate(0.5)";
+        return "blur(25px) brightness(0.3) saturate(0.8)";
     }
   }, [appState]);
 
   return (
     <div className="App relative h-screen overflow-hidden">
-      {/* Webcam video as the background */}
+      {/* Webcam video as the background - always visible and centered */}
       {webcamStream && (
         <video
           ref={videoRef}
@@ -95,16 +95,23 @@ function AppContent() {
             filter: videoBlurState,
             opacity: isVideoReady ? 1 : 0,
             zIndex: 0, // keep video at the very back
+
           }}
         />
       )}
   
-      {/* Dark overlay to control dimming, blur, etc. */}
+      {/* Dark overlay to control dimming and blur */}
       {appState !== "captioning" && (
-        <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm z-10" />
+        <div 
+          className="absolute inset-0 z-10" 
+          style={{
+            background: `radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.7) 100%)`,
+            backdropFilter: "blur(5px)",
+          }}
+        />
       )}
   
-      {/* Screens on top of video */}
+      {/* Screens on top of video - centered */}
       <div className="absolute inset-0 z-20 flex items-center justify-center">
         {appState === "requesting-permission" && (
           <WebcamPermissionDialog onPermissionGranted={handlePermissionGranted} />

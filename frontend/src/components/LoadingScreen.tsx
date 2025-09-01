@@ -6,65 +6,75 @@ import {
   CardContent,
   Typography,
   CircularProgress,
-  Alert,
   Stack,
-  LinearProgress,
 } from "@mui/material";
-import { Psychology, Download } from "@mui/icons-material";
-import { useVLMContext } from "../context/useVLMContext";
+import { Psychology, Cloud } from "@mui/icons-material";
 
 interface LoadingScreenProps {
   onComplete: () => void;
 }
 
 export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
-  const { loadModel, isLoading, error } = useVLMContext();
-  const [progress, setProgress] = useState<string>("Initializing...");
-  const [loadingStep, setLoadingStep] = useState(0);
+  const [loadingText, setLoadingText] = useState("Initializing...");
 
   useEffect(() => {
-    const loadModelAsync = async () => {
-      try {
-        await loadModel((msg) => {
-          setProgress(msg);
-          if (msg.includes("processor")) setLoadingStep(1);
-          if (msg.includes("model")) setLoadingStep(2);
-          if (msg.includes("successfully")) setLoadingStep(3);
-        });
-        onComplete();
-      } catch (err) {
-        console.error("Failed to load model:", err);
-        setProgress("Failed to load model. Please refresh the page.");
+    const loadingSteps = [
+      "Initializing...",
+      "Connecting to FastAPI backend...",
+      "Ready to analyze video!",
+    ];
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      if (currentStep < loadingSteps.length - 1) {
+        currentStep++;
+        setLoadingText(loadingSteps[currentStep]);
+      } else {
+        clearInterval(interval);
+        setTimeout(onComplete, 1000); // Wait 1 second before completing
       }
-    };
+    }, 1500);
 
-    loadModelAsync();
-  }, [loadModel, onComplete]);
-
-  const steps = [
-    "Initializing...",
-    "Loading processor...",
-    "Loading model...",
-    "Model loaded successfully!",
-  ];
+    return () => clearInterval(interval);
+  }, [onComplete]);
 
   return (
-    <Box  sx={{ 
-      width: "100%", 
-      height: "100%", 
-      display: "flex", 
-      alignItems: "center", 
-      justifyContent: "center", 
-      px: 10 // padding so it’s not tight on small screens>
-    }}>
-      <Card sx={{ maxWidth: 800, width: "100%" }}>
-        <CardContent sx={{ p: 6, textAlign: "center" }}>
+    <Box 
+      sx={{ 
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center", 
+        zIndex: 1000,
+        pointerEvents: "auto"
+      }}
+    >
+      <Card 
+        className="vintage-card vintage-border"
+        sx={{ 
+          maxWidth: 600, 
+          width: "90%",
+          maxHeight: "80vh",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+        }}
+      >
+        <CardContent sx={{ p: 6, textAlign: "center", position: "relative", zIndex: 1 }}>
           <Stack spacing={4} alignItems="center">
             <Box sx={{ position: "relative" }}>
               <CircularProgress
                 size={120}
                 thickness={4}
-                sx={{ color: "primary.main" }}
+                sx={{ 
+                  color: "primary.main",
+                  filter: "drop-shadow(0 0 8px rgba(0, 212, 170, 0.3))"
+                }}
+                className="vintage-pulse"
               />
               <Box
                 sx={{
@@ -74,52 +84,59 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
                   transform: "translate(-50%, -50%)",
                 }}
               >
-                <Psychology sx={{ fontSize: 40, color: "primary.main" }} />
+                <Psychology 
+                  sx={{ 
+                    fontSize: 40, 
+                    color: "primary.main",
+                    filter: "drop-shadow(0 0 4px rgba(0, 212, 170, 0.3))"
+                  }} 
+                  className="vintage-icon"
+                />
               </Box>
             </Box>
 
             <Box>
-              <Typography variant="h4" component="h2" gutterBottom>
-                Loading FastVLM Model
+              <Typography 
+                variant="h4" 
+                component="h2" 
+                gutterBottom
+                className="retro-glow vintage-text"
+              >
+                FastVLM Ready
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                {progress}
-              </Typography>
-            </Box>
-
-            <Box sx={{ width: "100%" }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Loading Progress
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={(loadingStep / (steps.length - 1)) * 100}
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
-                Step {loadingStep + 1} of {steps.length}: {steps[loadingStep]}
+              <Typography 
+                variant="body1" 
+                color="text.secondary" 
+                sx={{ mb: 3 }}
+                className="vintage-text"
+              >
+                {loadingText}
               </Typography>
             </Box>
-
-            {error && (
-              <Alert severity="error" sx={{ width: "100%" }}>
-                {error}
-              </Alert>
-            )}
 
             <Stack direction="row" spacing={2} alignItems="center" color="text.secondary">
-              <Download />
-              <Typography variant="body2">
-                This may take a few minutes on first load...
+              <Cloud className="vintage-icon" />
+              <Typography variant="body2" className="vintage-text">
+                Using FastAPI backend for AI analysis
               </Typography>
             </Stack>
 
             <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Model size: ~500MB
+              <Typography 
+                variant="caption" 
+                color="text.secondary" 
+                display="block"
+                className="vintage-text"
+              >
+                No model downloads required
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Subsequent loads will be much faster
+              <Typography 
+                variant="caption" 
+                color="text.secondary" 
+                display="block"
+                className="vintage-text"
+              >
+                Fast and efficient server-side processing
               </Typography>
             </Box>
           </Stack>

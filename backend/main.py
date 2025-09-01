@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from PIL import Image
@@ -37,10 +37,10 @@ def load_model():
 
 tok, model = load_model()
 
-def run_fastvlm_caption(image: Image.Image) -> str:
+def run_fastvlm_caption(image: Image.Image, prompt: str) -> str:
     # Build chat prompt
     messages = [
-        {"role": "user", "content": "<image>\n Give short description of what you see in the image."}
+        {"role": "user", "content": f"<image>\n{prompt}"}
     ]
     rendered = tok.apply_chat_template(
         messages, add_generation_prompt=True, tokenize=False
@@ -60,14 +60,17 @@ def run_fastvlm_caption(image: Image.Image) -> str:
             inputs=input_ids,
             attention_mask=attention_mask,
             images=px,
-            max_new_tokens=128,
+            max_new_tokens=32,
         )
     caption = tok.decode(out[0], skip_special_tokens=True)
     return caption.strip()
 
 @app.post("/caption", response_model=CaptionResponse)
-async def caption_image(file: UploadFile = File(...)):
+async def caption_image(
+    file: UploadFile = File(...),
+    prompt: str = Form("Describe in one sentence")
+):
     image_bytes = await file.read()
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    caption = run_fastvlm_caption(image)
+    caption = run_fastvlm_caption(image, prompt)
     return {"caption": caption}

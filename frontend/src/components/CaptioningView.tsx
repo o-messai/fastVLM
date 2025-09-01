@@ -23,21 +23,10 @@ import {
   CheckCircle,
 } from "@mui/icons-material";
 import { PROMPTS, TIMING } from "../constants";
+import { useVLMContext } from "../context/useVLMContext";
 
 interface CaptioningViewProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
-}
-
-async function sendFrameToBackend(imageBlob: Blob, prompt: string) {
-  const formData = new FormData();
-  formData.append("file", imageBlob, "frame.jpg");
-  // Optionally send prompt as a query param or in formData
-  const response = await fetch("http://localhost:8000/caption", {
-    method: "POST",
-    body: formData,
-  });
-  const data = await response.json();
-  return data.caption;
 }
 
 function captureFrame(video: HTMLVideoElement): Promise<Blob> {
@@ -57,6 +46,7 @@ function useCaptioningLoop(
   promptRef: React.RefObject<string>,
   onCaptionUpdate: (caption: string) => void,
   onError: (error: string) => void,
+  sendFrame: (imageBlob: Blob, prompt: string) => Promise<string>,
 ) {
   const abortControllerRef = useRef<AbortController | null>(null);
   const onCaptionUpdateRef = useRef(onCaptionUpdate);
@@ -83,9 +73,9 @@ function useCaptioningLoop(
           try {
             const currentPrompt = promptRef.current || "";
             const blob = await captureFrame(video);
-            const result = await sendFrameToBackend(blob, currentPrompt);
+            const result = await sendFrame(blob, currentPrompt);
             if (result && !signal.aborted) onCaptionUpdateRef.current(result);
-          } catch (error: any) {
+          } catch (error: unknown) {
             if (!signal.aborted) {
               const message = error instanceof Error ? error.message : String(error);
               onErrorRef.current(message);
@@ -103,13 +93,14 @@ function useCaptioningLoop(
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [isRunning, promptRef, videoRef]);
+  }, [isRunning, promptRef, videoRef, sendFrame]);
 }
 
 export default function CaptioningView({ videoRef }: CaptioningViewProps) {
+  const { sendFrame, isConnected, error: contextError } = useVLMContext();
   const [caption, setCaption] = useState<string>("");
   const [isLoopRunning, setIsLoopRunning] = useState<boolean>(true);
-  const [currentPrompt, setCurrentPrompt] = useState<string>(PROMPTS.default);
+  const [currentPrompt, setCurrentPrompt] = useState<string>("Describe what you see in one sentence.");
   const [error, setError] = useState<string | null>(null);
 
   const promptRef = useRef<string>(currentPrompt);
@@ -117,6 +108,13 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
   useEffect(() => {
     promptRef.current = currentPrompt;
   }, [currentPrompt]);
+
+  // Use context error if available
+  useEffect(() => {
+    if (contextError) {
+      setError(contextError);
+    }
+  }, [contextError]);
 
   const handleCaptionUpdate = useCallback((newCaption: string) => {
     setCaption(newCaption);
@@ -128,7 +126,7 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
     setCaption(`Error: ${errorMessage}`);
   }, []);
 
-  useCaptioningLoop(videoRef, isLoopRunning, promptRef, handleCaptionUpdate, handleError);
+  useCaptioningLoop(videoRef, isLoopRunning, promptRef, handleCaptionUpdate, handleError, sendFrame);
 
   const handlePromptChange = useCallback((prompt: string) => {
     setCurrentPrompt(prompt);
@@ -141,10 +139,10 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
   }, [error]);
 
   const promptOptions = [
-    { value: PROMPTS.default, label: "Default Description" },
-    { value: PROMPTS.simple, label: "Simple Description" },
-    { value: PROMPTS.detailed, label: "Detailed Analysis" },
-    { value: PROMPTS.question, label: "What's Happening?" },
+    { value: "Describe what you see in one sentence.", label: "Simple Description" },
+    { value: "Provide a detailed analysis of this image.", label: "Detailed Analysis" },
+    { value: "What is happening in this image?", label: "What's Happening?" },
+    // etc.
   ];
 
   return (
@@ -153,33 +151,57 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
         {/* Status Bar - Top */}
         <Paper
           elevation={3}
+          className="vintage-card"
           sx={{
             position: "absolute",
             top: 16,
             left: 16,
             right: 16,
             zIndex: 10,
-            background: "rgba(0, 0, 0, 0.7)",
-            backdropFilter: "blur(10px)",
+            background: "rgba(255, 255, 255, 0.04)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.2)",
           }}
         >
           <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <Stack direction="row" spacing={2} alignItems="center">
               <Chip
-                icon={isLoopRunning ? <CheckCircle /> : <Error />}
+                icon={isLoopRunning ? <CheckCircle className="vintage-icon" /> : <Error className="vintage-icon" />}
                 label={isLoopRunning ? "Live Analysis" : "Paused"}
                 color={isLoopRunning ? "success" : "error"}
                 variant="outlined"
+                className="vintage-pulse"
               />
-              <Typography variant="body2" color="text.secondary">
+              <Chip
+                icon={isConnected ? <CheckCircle className="vintage-icon" /> : <Error className="vintage-icon" />}
+                label={isConnected ? "Connected" : "Disconnected"}
+                color={isConnected ? "success" : "error"}
+                variant="outlined"
+                size="small"
+                className="vintage-pulse"
+                sx={{ animationDelay: "0.5s" }}
+              />
+              <Typography variant="body2" color="text.secondary" className="vintage-text">
                 FastVLM is {isLoopRunning ? "actively analyzing" : "paused"}
               </Typography>
             </Stack>
             <Button
-              variant={isLoopRunning ? "outlined" : "contained"}
-              startIcon={isLoopRunning ? <Pause /> : <PlayArrow />}
+              variant="contained"
+              startIcon={isLoopRunning ? <Pause className="vintage-icon" /> : <PlayArrow className="vintage-icon" />}
               onClick={handleToggleLoop}
-              color={isLoopRunning ? "warning" : "success"}
+              color="primary"
+              className="vintage-button"
+              sx={{
+                background: "linear-gradient(45deg, #00d4aa 0%, #4dd8c7 100%)",
+                color: "#000",
+                fontWeight: 600,
+                "&:hover": {
+                  background: "linear-gradient(45deg, #4dd8c7 0%, #00d4aa 100%)",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 4px 16px rgba(0, 212, 170, 0.3)",
+                },
+              }}
             >
               {isLoopRunning ? "Pause" : "Resume"}
             </Button>
@@ -189,21 +211,92 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
         {/* Prompt Input - Bottom Left */}
         <Paper
           elevation={3}
+          className="vintage-card"
           sx={{
             position: "absolute",
             bottom: 16,
             left: 16,
             zIndex: 10,
-            background: "rgba(0, 0, 0, 0.7)",
-            backdropFilter: "blur(10px)",
+            background: "rgba(255, 255, 255, 0.04)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.2)",
             minWidth: 300,
           }}
         >
+
+        </Paper>
+
+        {/* Live Caption - Bottom Right */}
+        <Paper
+          elevation={3}
+          className="vintage-card"
+          sx={{
+            position: "absolute",
+            bottom: 16,
+            right: 16,
+            zIndex: 10,
+            background: "rgba(255, 255, 255, 0.04)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.2)",
+            minWidth: 350,
+            maxWidth: 500,
+          }}
+        > 
           <Box sx={{ p: 3 }}>
             <Stack spacing={2}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Settings color="primary" />
-                <Typography variant="subtitle2" fontWeight="medium">
+                <Visibility color="primary" className="vintage-icon" />
+                <Typography variant="subtitle2" fontWeight="medium" className="vintage-text">
+                  Live Caption
+                </Typography>
+                <Chip
+                  size="small"
+                  label="AI Analysis"
+                  color="primary"
+                  variant="outlined"
+                  className="vintage-pulse"
+                />
+              </Box>
+              <Box sx={{ minHeight: 80 }}>
+                {error ? (
+                  <Alert 
+                    severity="error" 
+                    sx={{ mb: 2 }}
+                    className="vintage-alert error"
+                  >
+                    {error}
+                  </Alert>
+                ) : caption ? (
+                  <Box
+                    sx={{
+                      background: "rgba(20, 24, 28, 0.85)", // dark semi-transparent
+                      color: "#e0e0e0", // softer light gray
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1,
+                      display: "inline-block",
+                      maxWidth: "100%",
+                      wordBreak: "break-word",
+                      fontSize: "1.1em",
+                      fontWeight: 500,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    }}
+                  >
+                    {caption}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" className="vintage-text">
+                    Waiting for analysis...
+                  </Typography>
+                )}
+              </Box>
+              <Box sx={{ p: 3 }}>
+            <Stack spacing={2}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Settings color="primary" className="vintage-icon" />
+                <Typography variant="subtitle2" fontWeight="medium" className="vintage-text">
                   Analysis Prompt
                 </Typography>
               </Box>
@@ -212,6 +305,7 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
                   value={currentPrompt}
                   onChange={(e) => handlePromptChange(e.target.value)}
                   sx={{ color: "white" }}
+                  className="vintage-input"
                 >
                   {promptOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -222,51 +316,6 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
               </FormControl>
             </Stack>
           </Box>
-        </Paper>
-
-        {/* Live Caption - Bottom Right */}
-        <Paper
-          elevation={3}
-          sx={{
-            position: "absolute",
-            bottom: 16,
-            right: 16,
-            zIndex: 10,
-            background: "rgba(0, 0, 0, 0.7)",
-            backdropFilter: "blur(10px)",
-            minWidth: 350,
-            maxWidth: 500,
-          }}
-        >
-          <Box sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Visibility color="primary" />
-                <Typography variant="subtitle2" fontWeight="medium">
-                  Live Caption
-                </Typography>
-                <Chip
-                  size="small"
-                  label="AI Analysis"
-                  color="primary"
-                  variant="outlined"
-                />
-              </Box>
-              <Box sx={{ minHeight: 80 }}>
-                {error ? (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                  </Alert>
-                ) : caption ? (
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                    {caption}
-                  </Typography>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    Waiting for analysis...
-                  </Typography>
-                )}
-              </Box>
             </Stack>
           </Box>
         </Paper>
@@ -275,6 +324,7 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
         {error && (
           <Alert
             severity="error"
+            className="vintage-alert error"
             sx={{
               position: "absolute",
               top: 100,
@@ -282,6 +332,8 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
               transform: "translateX(-50%)",
               zIndex: 10,
               minWidth: 400,
+              border: "1px solid rgba(244, 67, 54, 0.3)",
+              backgroundColor: "rgba(244, 67, 54, 0.05)",
             }}
             action={
               <Tooltip title="Clear error">
@@ -290,7 +342,7 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
                   size="small"
                   onClick={() => setError(null)}
                 >
-                  <Error />
+                  <Error className="vintage-icon" />
                 </IconButton>
               </Tooltip>
             }

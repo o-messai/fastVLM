@@ -1,11 +1,11 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'IBM Plex Sans', 'IBM Plex Mono', system-ui, monospace;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: #e0e0e0;
+  background-color: #0a0a0a;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -19,6 +19,9 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  font-family: 'IBM Plex Sans', sans-serif;
 }
 
 #root {
@@ -31,20 +34,76 @@ body {
   height: 100vh;
 }
 
-/* Custom scrollbar */
+/* Modern Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 212, 170, 0.05);
+  border: 1px solid rgba(0, 212, 170, 0.1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
+  background: linear-gradient(180deg, #00d4aa, #4dd8c7);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 212, 170, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(180deg, #4dd8c7, #00d4aa);
+}
+
+/* Firefox Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #00d4aa rgba(0, 212, 170, 0.05);
+}
+
+/* Selection Styling */
+::selection {
+  background: rgba(0, 212, 170, 0.2);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background: rgba(0, 212, 170, 0.2);
+  color: #ffffff;
+}
+
+/* Focus Styling */
+*:focus {
+  outline: 2px solid #00d4aa;
+  outline-offset: 2px;
+}
+
+/* Modern Text Selection */
+.vintage-selection {
+  background: rgba(0, 212, 170, 0.15);
+  color: #ffffff;
+}
+
+/* Global Modern Effects */
+.vintage-global {
+  text-shadow: 0 0 2px rgba(0, 212, 170, 0.2);
+}
+
+/* Modern Link Styling */
+a {
+  color: #00d4aa;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: #4dd8c7;
+  text-shadow: 0 0 4px rgba(0, 212, 170, 0.3);
+}
+
+/* Modern Input Focus */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #00d4aa !important;
+  box-shadow: 0 0 6px rgba(0, 212, 170, 0.2) !important;
 }
