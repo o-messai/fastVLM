@@ -43,12 +43,45 @@ export const VLMProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
     [],
   );
 
+  const sendFrames = useCallback(
+    async (imageBlobs: Blob[], prompt: string, numFrames: number, frameJump: number): Promise<string> => {
+      try {
+        setError(null);
+        const formData = new FormData();
+        imageBlobs.forEach((blob, idx) => {
+          formData.append("files", blob, `frame_${idx}.jpg`);
+        });
+        formData.append("prompt", prompt);
+        formData.append("num_frames", String(numFrames));
+        formData.append("frame_jump", String(frameJump));
+        const response = await fetch(`${API_BASE_URL}/action`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setIsConnected(true);
+        return data.action || "No action received";
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        setError(errorMessage);
+        setIsConnected(false);
+        console.error("Error sending frames to backend:", e);
+        throw e;
+      }
+    },
+    [],
+  );
+
   return (
     <VLMContext.Provider
       value={{
         isConnected,
         error,
         sendFrame,
+        sendFrames,
       }}
     >
       {children}

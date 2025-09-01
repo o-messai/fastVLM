@@ -97,11 +97,14 @@ function useCaptioningLoop(
 }
 
 export default function CaptioningView({ videoRef }: CaptioningViewProps) {
-  const { sendFrame, isConnected, error: contextError } = useVLMContext();
+  const { sendFrame, sendFrames, isConnected, error: contextError } = useVLMContext();
   const [caption, setCaption] = useState<string>("");
   const [isLoopRunning, setIsLoopRunning] = useState<boolean>(true);
-  const [currentPrompt, setCurrentPrompt] = useState<string>("Describe what you see in one sentence.");
+  const [currentPrompt, setCurrentPrompt] = useState<string>("Describe what is happening.");
   const [error, setError] = useState<string | null>(null);
+  const [numFrames, setNumFrames] = useState<number>(60);
+  const [frameJump, setFrameJump] = useState<number>(10);
+  const [isActionMode, setIsActionMode] = useState<boolean>(true);
 
   const promptRef = useRef<string>(currentPrompt);
 
@@ -109,7 +112,6 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
     promptRef.current = currentPrompt;
   }, [currentPrompt]);
 
-  // Use context error if available
   useEffect(() => {
     if (contextError) {
       setError(contextError);
@@ -126,7 +128,63 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
     setCaption(`Error: ${errorMessage}`);
   }, []);
 
-  useCaptioningLoop(videoRef, isLoopRunning, promptRef, handleCaptionUpdate, handleError, sendFrame);
+  // Multi-frame capture and send logic
+  useEffect(() => {
+    let abort = false;
+    if (!isLoopRunning) return;
+    
+    const video = videoRef.current;
+    
+    async function captureAndSendFrames() {
+      if (!video || video.readyState < 2 || video.paused || video.videoWidth === 0) return;
+      
+      try {
+        if (isActionMode && sendFrames) {
+          // Action mode: capture multiple frames
+          const blobs: Blob[] = [];
+          let frameIdx = 0;
+          
+          while (blobs.length < numFrames && !abort) {
+            const blob = await captureFrame(video);
+            blobs.push(blob);
+            frameIdx++;
+            
+            if (blobs.length < numFrames) {
+              await new Promise(res => setTimeout(res, TIMING.FRAME_CAPTURE_DELAY * frameJump));
+            }
+          }
+          
+          const prompt = promptRef.current || "";
+          const result = await sendFrames(blobs, prompt, numFrames, frameJump);
+          if (!abort) handleCaptionUpdate(result);
+        } else {
+          // Caption mode: capture single frame
+          const blob = await captureFrame(video);
+          const prompt = promptRef.current || "";
+          const result = await sendFrame(blob, prompt);
+          if (!abort) handleCaptionUpdate(result);
+        }
+      } catch (error: unknown) {
+        if (!abort) handleError(error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    // Start the continuous loop
+    const startLoop = () => {
+      if (abort) return;
+      captureAndSendFrames().finally(() => {
+        if (!abort) {
+          setTimeout(startLoop, TIMING.FRAME_CAPTURE_DELAY * 2);
+        }
+      });
+    };
+
+    startLoop();
+    
+    return () => { 
+      abort = true; 
+    };
+  }, [isLoopRunning, numFrames, frameJump, sendFrames, sendFrame, videoRef, handleCaptionUpdate, handleError, isActionMode]);
 
   const handlePromptChange = useCallback((prompt: string) => {
     setCurrentPrompt(prompt);
@@ -138,10 +196,15 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
     if (error) setError(null);
   }, [error]);
 
+  const handleToggleMode = useCallback(() => {
+    setIsActionMode((prev) => !prev);
+    setError(null);
+  }, []);
+
   const promptOptions = [
     { value: "Describe what you see in one sentence.", label: "Simple Description" },
     { value: "Provide a detailed analysis of this image.", label: "Detailed Analysis" },
-    { value: "What is happening in this image?", label: "What's Happening?" },
+    { value: "Describe what is happening.", label: "What's Happening?" },
     // etc.
   ];
 
@@ -158,10 +221,10 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
             left: 16,
             right: 16,
             zIndex: 10,
-            background: "rgba(255, 255, 255, 0.04)",
+            background: "rgba(14, 11, 11, 0.04)",
             backdropFilter: "blur(20px)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
-            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.2)",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.6)",
           }}
         >
           <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -186,29 +249,47 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
                 FastVLM is {isLoopRunning ? "actively analyzing" : "paused"}
               </Typography>
             </Stack>
-            <Button
-              variant="contained"
-              startIcon={isLoopRunning ? <Pause className="vintage-icon" /> : <PlayArrow className="vintage-icon" />}
-              onClick={handleToggleLoop}
-              color="primary"
-              className="vintage-button"
-              sx={{
-                background: "linear-gradient(45deg, #00d4aa 0%, #4dd8c7 100%)",
-                color: "#000",
-                fontWeight: 600,
-                "&:hover": {
-                  background: "linear-gradient(45deg, #4dd8c7 0%, #00d4aa 100%)",
-                  transform: "translateY(-1px)",
-                  boxShadow: "0 4px 16px rgba(0, 212, 170, 0.3)",
-                },
-              }}
-            >
-              {isLoopRunning ? "Pause" : "Resume"}
-            </Button>
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                onClick={handleToggleMode}
+                color="primary"
+                className="vintage-button"
+                sx={{
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  color: "white",
+                  "&:hover": {
+                    border: "1px solid rgba(255, 255, 255, 0.5)",
+                    background: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                {isActionMode ? "Action Mode" : "Caption Mode"}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={isLoopRunning ? <Pause className="vintage-icon" /> : <PlayArrow className="vintage-icon" />}
+                onClick={handleToggleLoop}
+                color="primary"
+                className="vintage-button"
+                sx={{
+                  background: "linear-gradient(45deg, #00d4aa 0%, #4dd8c7 100%)",
+                  color: "#000",
+                  fontWeight: 600,
+                  "&:hover": {
+                    background: "linear-gradient(45deg, #4dd8c7 0%, #00d4aa 100%)",
+                    transform: "translateY(-1px)",
+                    boxShadow: "0 4px 16px rgba(0, 212, 170, 0.3)",
+                  },
+                }}
+              >
+                {isLoopRunning ? "Pause" : "Resume"}
+              </Button>
+            </Stack>
           </Box>
         </Paper>
 
-        {/* Prompt Input - Bottom Left */}
+        {/* Prompt Input & Frame Controls - Bottom Left */}
         <Paper
           elevation={3}
           className="vintage-card"
@@ -222,12 +303,77 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
             border: "1px solid rgba(255, 255, 255, 0.08)",
             boxShadow: "0 2px 12px rgba(0, 0, 0, 0.2)",
             minWidth: 300,
+            p: 2,
           }}
         >
-
+          <Stack spacing={2}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={currentPrompt}
+                onChange={(e) => handlePromptChange(e.target.value)}
+                sx={{ color: "white" }}
+                className="vintage-input"
+              >
+                {promptOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {isActionMode && (
+              <Stack spacing={2}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem" }}>
+                  Frame Settings
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Typography variant="body2" color="text.secondary" sx={{ minWidth: 60 }}>
+                    Frames:
+                  </Typography>
+                  <input
+                    type="number"
+                    min={1}
+                    max={32}
+                    value={numFrames}
+                    onChange={e => setNumFrames(Number(e.target.value))}
+                    style={{
+                      width: 60,
+                      background: "rgba(255, 255, 255, 0.1)",
+                      color: "#fff",
+                      border: "1px solid rgba(255, 255, 255, 0.3)",
+                      borderRadius: 4,
+                      padding: "4px 8px",
+                      fontSize: "0.875rem",
+                      backdropFilter: "blur(10px)",
+                    }}
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ minWidth: 50 }}>
+                    Jump:
+                  </Typography>
+                  <input
+                    type="number"
+                    min={1}
+                    max={16}
+                    value={frameJump}
+                    onChange={e => setFrameJump(Number(e.target.value))}
+                    style={{
+                      width: 60,
+                      background: "rgba(255, 255, 255, 0.1)",
+                      color: "#fff",
+                      border: "1px solid rgba(255, 255, 255, 0.3)",
+                      borderRadius: 4,
+                      padding: "4px 8px",
+                      fontSize: "0.875rem",
+                      backdropFilter: "blur(10px)",
+                    }}
+                  />
+                </Stack>
+              </Stack>
+            )}
+          </Stack>
         </Paper>
 
-        {/* Live Caption - Bottom Right */}
+        {/* Live Caption/Action - Bottom Right */}
         <Paper
           elevation={3}
           className="vintage-card"
@@ -236,24 +382,24 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
             bottom: 16,
             right: 16,
             zIndex: 10,
-            background: "rgba(255, 255, 255, 0.04)",
+            background: "rgba(27, 23, 23, 0.14)",
             backdropFilter: "blur(20px)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
             boxShadow: "0 2px 12px rgba(0, 0, 0, 0.2)",
             minWidth: 350,
             maxWidth: 500,
           }}
-        > 
+        >
           <Box sx={{ p: 3 }}>
             <Stack spacing={2}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Visibility color="primary" className="vintage-icon" />
                 <Typography variant="subtitle2" fontWeight="medium" className="vintage-text">
-                  Live Caption
+                  {isActionMode ? "Action Prediction" : "Live Caption"}
                 </Typography>
                 <Chip
                   size="small"
-                  label="AI Analysis"
+                  label={isActionMode ? "Multi-Frame" : "Single Frame"}
                   color="primary"
                   variant="outlined"
                   className="vintage-pulse"
@@ -271,8 +417,8 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
                 ) : caption ? (
                   <Box
                     sx={{
-                      background: "rgba(20, 24, 28, 0.85)", // dark semi-transparent
-                      color: "#e0e0e0", // softer light gray
+                      background: "rgba(20, 24, 28, 0.85)",
+                      color: "#e0e0e0",
                       borderRadius: 2,
                       px: 2,
                       py: 1,
@@ -292,30 +438,6 @@ export default function CaptioningView({ videoRef }: CaptioningViewProps) {
                   </Typography>
                 )}
               </Box>
-              <Box sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Settings color="primary" className="vintage-icon" />
-                <Typography variant="subtitle2" fontWeight="medium" className="vintage-text">
-                  Analysis Prompt
-                </Typography>
-              </Box>
-              <FormControl fullWidth size="small">
-                <Select
-                  value={currentPrompt}
-                  onChange={(e) => handlePromptChange(e.target.value)}
-                  sx={{ color: "white" }}
-                  className="vintage-input"
-                >
-                  {promptOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
-          </Box>
             </Stack>
           </Box>
         </Paper>
