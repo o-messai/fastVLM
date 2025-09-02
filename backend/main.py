@@ -27,7 +27,7 @@ class ActionRequest(BaseModel):
 class ActionResponse(BaseModel):
     action: str
 
-MID = "apple/FastVLM-0.5B"
+MID = "apple/FastVLM-1.5B"
 IMAGE_TOKEN_INDEX = -200
 
 def load_model():

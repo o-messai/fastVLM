@@ -1,8 +1,8 @@
-# FastVLM + FastAPI + React js
+# LLaVA/FastVLM + FastAPI + React js
 
 ![Demo Animation](/demo_.gif)
 
-FastVLM is a **real-time visual language model demo** built with:
+A **real-time visual language model demo** built with:
 - **FastAPI** as the backend (serving a Hugging Face Transformer model).
 - **React.js** as the frontend (providing a live webcam UI).
 
@@ -11,7 +11,7 @@ The app streams your webcam feed to the model, which generates **real-time capti
 ---
 
 ## 🚀 Features
-- Real-time webcam captioning with a Hugging Face Transformer model (ONNX).
+- Real-time webcam captioning with a Hugging Face Transformer model.
 - Backend API built with FastAPI and Uvicorn.
 - Frontend UI built with React.js + Material UI.
 - Simple start-up workflow: run backend + frontend locally.
