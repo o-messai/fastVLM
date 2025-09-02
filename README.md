@@ -1,5 +1,7 @@
 # LLaVA/FastVLM + FastAPI + React js
 
+### An implementation of FastVLM/LLaVA or any llm/vlm model using FastAPI (backend) and react js (backend) + Action/Caption mode and frame control
+
 ![Demo Animation](/demo_.gif)
 
 A **real-time visual language model demo** built with:
