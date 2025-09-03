@@ -1,6 +1,6 @@
 # LLaVA/FastVLM + FastAPI + React js
 
-### An implementation of FastVLM/LLaVA or any llm/vlm model using FastAPI (backend) and react js (backend) + Action/Caption mode and frame control
+### An implementation of FastVLM/LLaVA or any llm/vlm model using REST API and react js + Action/Caption mode and frame control.
 
 ![Demo Animation](/demo_.gif)
 
